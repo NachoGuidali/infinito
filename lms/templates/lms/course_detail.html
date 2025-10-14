@@ -1,0 +1,92 @@
+{% extends 'lms/base.html' %}
+{% block title %}{{ course.title }} — Infinito Capacitaciones{% endblock %}
+{% block content %}
+<h1>{{ course.title }}</h1>
+
+{# Tarjeta top (img + descripción) tono intermedio #}
+<div class="card" style="display:flex; gap:16px; align-items:flex-start; background:#ffe6f2; border-color:#ffd9ec">
+  <img src="{{ course.image_url|default:'https://via.placeholder.com/640x360?text=Curso' }}"
+       alt="{{ course.title }}"
+       style="width:360px; max-width:45%; aspect-ratio:16/9; object-fit:cover; border-radius:12px; border:1px solid #e9e9e9">
+  <div style="flex:1">
+    {# Descripción en blanco #}
+    <details class="card" style="padding:12px; background:#ffffff; border-color:var(--line)">
+      <summary>Descripción</summary>
+      <div class="muted" style="margin-top:8px">{{ course.description|linebreaks }}</div>
+    </details>
+
+    {# CTA principal debajo de la descripción #}
+    <div style="margin-top:12px">
+      {% if course_owned %}
+        {% if course.stages.all %}
+          <a class="btn" href="{% url 'lms:stage_detail' course.slug course.stages.all.0.slug %}">Ver curso</a>
+        {% endif %}
+      {% else %}
+        {% if bundles %}
+          {# si tenés más de un bundle podés iterarlos, por ahora usamos el primero #}
+          {% for b in bundles %}
+            <a class="btn" href="{% url 'lms:checkout' %}?bundle_id={{ b.id }}">Comprar curso completo</a>
+          {% endfor %}
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<h2 style="margin-top:24px">Etapas</h2>
+<ol style="padding-left:16px">
+  {% for st in course.stages.all %}
+    {# Tarjeta de etapa (rosa suave) #}
+    <li class="card" style="list-style-position:inside; margin-bottom:14px; background:#ffe6f2; border-color:#ffd9ec">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px">
+        <div style="flex:1">
+          <strong>{{ st.title }}</strong>
+
+          {# Contenido de la etapa en blanco #}
+          <details class="card" style="margin-top:10px; padding:10px; background:#ffffff; border-color:var(--line)">
+            <summary style="color: var(--color-boton); font-weight:700">Contenido de la etapa</summary>
+            {% with lessons=st.lessons.all %}
+              {% if lessons %}
+                <ul class="muted" style="margin:10px 0 0 20px; padding:0">
+                  {% for le in lessons %}<li>{{ le.title }}</li>{% endfor %}
+                </ul>
+              {% else %}
+                <p class="muted" style="margin:10px 0 0">Sin clases cargadas.</p>
+              {% endif %}
+            {% endwith %}
+          </details>
+        </div>
+
+        <div>
+          {% if request.user.is_authenticated and stage_entitled_ids and st.id in stage_entitled_ids %}
+            <a class="btn" href="{% url 'lms:stage_detail' course.slug st.slug %}">Ver etapa</a>
+          {% else %}
+            <a class="btn" href="{% url 'lms:checkout' %}?stage_id={{ st.id }}">Comprar etapa</a>
+          {% endif %}
+        </div>
+      </div>
+    </li>
+  {% endfor %}
+</ol>
+
+{# Bloque “Curso completo” al final #}
+{% if bundles %}
+  <div class="card" style="display:flex; align-items:center; justify-content:space-between; background:#fff; border-color:var(--line)">
+    <div>
+      <strong>Curso completo</strong> — Incluye {{ course.stages.all|length }} etapas
+    </div>
+    <div>
+      {% if course_owned %}
+        {% if course.stages.all %}
+          <a class="btn secondary" href="{% url 'lms:stage_detail' course.slug course.stages.all.0.slug %}">Ver curso</a>
+        {% endif %}
+      {% else %}
+        {% for b in bundles %}
+          <a class="btn" href="{% url 'lms:checkout' %}?bundle_id={{ b.id }}">Comprar curso completo</a>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'lms/base.html' %}
+{% block title %}Cursos y capacitaciones — Infinito Capacitaciones{% endblock %}
+{% block content %}
+<h1>Cursos</h1>
+
+{% if courses %}
+  <div class="grid grid-3">
+    {% for c in courses %}
+      <article class="card">
+        <img src="{{ c.image_url|default:'https://via.placeholder.com/640x360?text=Curso' }}"
+             alt="{{ c.title }}"
+             style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:10px; border:1px solid #e9e9e9">
+        <h3 style="margin:12px 0 6px">{{ c.title }}</h3>
+        <p class="muted" style="min-height:3em">{{ c.description|default:''|truncatechars:120 }}</p>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px">
+          <a class="btn" href="{% url 'lms:course_detail' c.slug %}">Ver curso</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">No hay cursos.</p>
+{% endif %}
+{% endblock %}

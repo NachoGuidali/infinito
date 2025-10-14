@@ -1,0 +1,12 @@
+{% extends 'lms/base.html' %}
+{% block title %}Checkout{% endblock %}
+{% block content %}
+<h1>Checkout</h1>
+<p>Compra #{{ purchase.id }} — Total ${{ purchase.total_ars }}</p>
+<p>(Demo) Después de pagar, el webhook marca como pagado y habilita tu acceso.</p>
+<form method="post" action="{% url 'lms:webhook_paid' %}">{% csrf_token %}
+  <input type="hidden" name="purchase_id" value="{{ purchase.id }}" />
+  <input type="hidden" name="external_ref" value="demo" />
+  <button class="btn" type="submit">Simular pago aprobado</button>
+</form>
+{% endblock %}
