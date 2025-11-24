@@ -21,12 +21,14 @@
     <div class="card">
       <h4>{{ les.title }}</h4>
 
-      {# Intento de embed con fallback automático si YouTube lo bloquea #}
-      <div class="ytbox"
-           id="yt-{{ forloop.counter0 }}"
-           data-url="{{ les.youtube_url|escape }}"
-           style="position:relative;width:100%;max-width:960px;aspect-ratio:16/9;background:#000;overflow:hidden;border-radius:12px">
-      </div>
+      {% if les.youtube_url %}
+  {# Solo pinto el contenedor si hay URL válida #}
+  <div class="ytbox"
+       id="yt-{{ forloop.counter0 }}"
+       data-url="{{ les.youtube_url|escape }}"
+       style="position:relative;width:100%;max-width:960px;aspect-ratio:16/9;background:#000;overflow:hidden;border-radius:12px">
+  </div>
+{% endif %}
 
       {% if les.pdf_url %}
         <div style="margin-top:12px">

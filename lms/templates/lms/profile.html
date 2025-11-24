@@ -16,7 +16,8 @@
   .kpi.badge-green  .dot{width:10px;height:10px;border-radius:50%;background:#22c55e}
   .kpi.badge-red    .dot{width:10px;height:10px;border-radius:50%;background:#ef4444}
 
-  .avatar{width:140px;height:140px;border-radius:50%;border:8px solid #f8e8f5;object-fit:cover}
+  .avatar{width:140px;height:140px;border-radius:50%;border:8px solid #f8e8f5;object-fit:cover;background:#f7f7f7}
+  .avatar-wrap{display:flex;align-items:center;gap:12px}
   .side-menu a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px}
   .side-menu a.active, .side-menu a:hover{background:#fff;border:1px solid #f1c5eb}
   .btn{background:#ff4ec6;color:#fff;border:none;border-radius:999px;padding:10px 16px;font-weight:700;text-decoration:none}
@@ -32,47 +33,40 @@
   .list{display:grid;gap:12px}
   .empty{padding:40px;text-align:center;border:1px dashed #ddd;border-radius:12px;background:#fff}
   .hidden{display:none}
+
+  /* inputs */
+  .input{width:100%;padding:12px;border:1px solid #e5e5e5;border-radius:12px;outline:none}
+  .input:focus{border-color:#ff4ec6;box-shadow:0 0 0 3px rgba(255,78,198,.15)}
+  .field{display:flex;flex-direction:column;gap:6px}
+  label{font-size:13px;font-weight:600;color:#333}
+  .hint{font-size:12px;color:#666}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width: 760px){ .profile-grid{grid-template-columns:1fr} .grid2{grid-template-columns:1fr} }
 </style>
 
 <h1>Mi perfil</h1>
 
-<!-- KPIs filtrables -->
+<!-- KPIs -->
 <div class="kpis" id="kpiBar">
-  <div class="kpi badge-purple" data-filter="todos" data-target="cursos" title="Ver todos">
-    <div class="dot"></div>
-    <div>
-      <div class="num">{{ stats.inscriptos }}</div>
-      <div class="lbl">Cursos inscriptos</div>
-    </div>
+  <div class="kpi badge-purple" data-filter="todos" data-target="cursos">
+    <div class="dot"></div><div><div class="num">{{ stats.inscriptos }}</div><div class="lbl">Cursos inscriptos</div></div>
   </div>
-  <div class="kpi badge-blue" data-filter="en_progreso" data-target="cursos" title="Ver en progreso">
-    <div class="dot"></div>
-    <div>
-      <div class="num">{{ stats.en_progreso }}</div>
-      <div class="lbl">Cursos en progreso</div>
-    </div>
+  <div class="kpi badge-blue" data-filter="en_progreso" data-target="cursos">
+    <div class="dot"></div><div><div class="num">{{ stats.en_progreso }}</div><div class="lbl">Cursos en progreso</div></div>
   </div>
-  <div class="kpi badge-green" data-filter="aprobado" data-target="cursos" title="Ver finalizados">
-    <div class="dot"></div>
-    <div>
-      <div class="num">{{ stats.finalizados }}</div>
-      <div class="lbl">Cursos finalizados</div>
-    </div>
+  <div class="kpi badge-green" data-filter="aprobado" data-target="cursos">
+    <div class="dot"></div><div><div class="num">{{ stats.finalizados }}</div><div class="lbl">Cursos finalizados</div></div>
   </div>
-  <div class="kpi badge-red" data-filter="desaprobados" data-target="cursos" title="Ver cuestionarios desaprobados">
-    <div class="dot"></div>
-    <div>
-      <div class="num">{{ stats.desaprobados }}</div>
-      <div class="lbl">Cuestionarios desaprobados</div>
-    </div>
+  <div class="kpi badge-red" data-filter="desaprobados" data-target="cursos">
+    <div class="dot"></div><div><div class="num">{{ stats.desaprobados }}</div><div class="lbl">Cuestionarios desaprobados</div></div>
   </div>
 </div>
 
 <div class="profile-grid">
-  <!-- LADO IZQUIERDO -->
+  <!-- Lado izquierdo -->
   <div class="card">
     <div style="text-align:center">
-      <img class="avatar" src="{{ avatar_url }}" alt="Avatar">
+      <img class="avatar" id="avatarPreview" src="{{ avatar_url }}" alt="Avatar">
       <h3 style="margin:10px 0 2px">{{ request.user.username }}</h3>
       <div class="muted">{{ request.user.email }}</div>
     </div>
@@ -81,15 +75,13 @@
       <a href="#mis-cursos" data-panel="cursos" class="active">📚 Mis cursos</a>
       <a href="#pedidos" data-panel="pedidos">🧾 Pedidos</a>
       <a href="#config" data-panel="config">⚙️ Configuración</a>
-      
       <a href="{% url 'lms:logout' %}">⛔ Cerrar sesión</a>
-
     </div>
   </div>
 
-  <!-- LADO DERECHO -->
+  <!-- Lado derecho -->
   <div>
-    <!-- Panel: Cursos -->
+    <!-- Cursos -->
     <div id="panel-cursos" class="card">
       <div class="header-row">
         <h3 id="mis-cursos" style="margin:0">Mis cursos</h3>
@@ -119,7 +111,9 @@
                 </div>
 
                 <div style="text-align:right">
-                  {% if c.next_stage_url %}
+                  {% if c.kind == 'training' %}
+                    <a class="btn" href="{% url 'lms:course_detail' c.course.slug %}#contenido">Continuar</a>
+                  {% elif c.next_stage_url %}
                     <a class="btn" href="{{ c.next_stage_url }}">Continuar</a>
                   {% else %}
                     <span class="chip ok">Curso finalizado</span>
@@ -134,7 +128,7 @@
       {% endif %}
     </div>
 
-    <!-- Panel: Compras / Pedidos (arranca oculto) -->
+    <!-- Pedidos -->
     <div id="panel-pedidos" class="card hidden">
       <h3 id="pedidos" style="margin:0 0 12px">Mis compras</h3>
       {% if purchases %}
@@ -150,10 +144,8 @@
               <ul style="margin:10px 0 0 18px">
                 {% for it in p.items.all %}
                   <li>
-                    {% if it.stage %}
-                      Etapa: {{ it.stage.title }}
-                    {% elif it.bundle %}
-                      Curso completo: {{ it.bundle.title }}
+                    {% if it.stage %} Etapa: {{ it.stage.title }} ({{ it.stage.course.title }})
+                    {% elif it.bundle %} Curso completo: {{ it.bundle.course.title }}
                     {% endif %}
                   </li>
                 {% endfor %}
@@ -166,25 +158,60 @@
       {% endif %}
     </div>
 
-    <!-- Panel: Configuración (arranca oculto) -->
+    <!-- Configuración -->
     <div id="panel-config" class="card hidden">
       <h3 id="config" style="margin:0 0 12px">Configuración</h3>
-      <form method="post">
+
+      <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label>Nombre</label>
-            <input name="first_name" class="card" style="padding:10px;width:100%" value="{{ request.user.first_name }}">
-          </div>
-          <div>
-            <label>Apellido</label>
-            <input name="last_name" class="card" style="padding:10px;width:100%" value="{{ request.user.last_name }}">
-          </div>
-          <div style="grid-column:1 / -1">
-            <label>Email</label>
-            <input name="email" class="card" style="padding:10px;width:100%" value="{{ request.user.email }}">
+
+        <!-- Avatar -->
+        <div class="field" style="margin-bottom:14px">
+          <label>Foto de perfil</label>
+          <div class="avatar-wrap">
+            <img class="avatar" id="avatarInlinePreview" src="{{ avatar_url }}" alt="Avatar">
+            <div style="flex:1">
+              <input class="input" type="file" name="avatar" id="avatarInput" accept="image/png, image/jpeg">
+              <div class="hint">Formatos sugeridos: JPG o PNG.</div>
+            </div>
           </div>
         </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label>Nombre *</label>
+            <input required name="first_name" class="input" value="{{ request.user.first_name }}">
+          </div>
+          <div class="field">
+            <label>Apellido *</label>
+            <input required name="last_name" class="input" value="{{ request.user.last_name }}">
+          </div>
+          <div class="field" style="grid-column:1 / -1">
+            <label>Email *</label>
+            <input required type="email" name="email" class="input" value="{{ request.user.email }}">
+          </div>
+          <div class="field">
+            <label>DNI *</label>
+            <input required name="dni" class="input" inputmode="numeric" pattern="[0-9]*" maxlength="12" placeholder="Ej: 12345678" value="{{ extra.dni|default:'' }}">
+          </div>
+          <div class="field">
+            <label>Teléfono *</label>
+            <input required name="phone" class="input" inputmode="tel" placeholder="Ej: +54 9 11 1234-5678" value="{{ extra.phone|default:'' }}">
+          </div>
+          <div class="field">
+            <label>Fecha de nacimiento *</label>
+            <input required type="date" name="birthdate" class="input" value="{{ extra.birthdate|default:'' }}">
+          </div>
+          <div class="field">
+            <label>Dirección</label>
+            <input name="address" class="input" placeholder="Calle y número" value="{{ extra.address|default:'' }}">
+          </div>
+          <div class="field" style="grid-column:1 / -1">
+            <label>Código postal</label>
+            <input name="postal_code" class="input" inputmode="numeric" pattern="[0-9]*" maxlength="10" placeholder="Ej: 1900" value="{{ extra.postal_code|default:'' }}">
+          </div>
+        </div>
+
         <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
           <button class="btn" type="submit">Guardar cambios</button>
         </div>
@@ -194,67 +221,45 @@
 </div>
 
 <script>
-  // --- Filtrado de cursos por tabs/KPI ---
+  // Filtrado cursos
   const list = document.getElementById('coursesList');
   const tabs = document.querySelectorAll('.tab');
   const kpis = document.querySelectorAll('.kpi');
-  function applyFilter(f) {
+  function applyFilter(f){ 
     tabs.forEach(t => t.classList.toggle('active', t.dataset.filter === f));
     document.querySelectorAll('.course-item').forEach(li => {
       li.style.display = (f === 'todos' || li.dataset.status === f) ? '' : 'none';
     });
   }
+  tabs.forEach(t => t.addEventListener('click', ()=>{ showPanel('cursos'); applyFilter(t.dataset.filter); history.replaceState(null,'','#mis-cursos'); }));
+  kpis.forEach(k => k.addEventListener('click', ()=>{ const f = k.dataset.filter || 'todos'; showPanel('cursos'); applyFilter(f); history.replaceState(null,'','#mis-cursos'); }));
 
-  tabs.forEach(t => t.addEventListener('click', () => {
-    showPanel('cursos'); // siempre muestra cursos al usar tabs
-    applyFilter(t.dataset.filter);
-    history.replaceState(null, '', '#mis-cursos');
-  }));
-
-  kpis.forEach(k => k.addEventListener('click', () => {
-    const f = k.dataset.filter || 'todos';
-    showPanel('cursos');
-    applyFilter(f);
-    history.replaceState(null, '', '#mis-cursos');
-  }));
-
-  // --- Mostrar/Ocultar paneles según menú lateral ---
+  // Paneles
   const sideLinks = document.querySelectorAll('.side-menu a[data-panel]');
-  const panels = {
-    cursos:  document.getElementById('panel-cursos'),
-    pedidos: document.getElementById('panel-pedidos'),
-    config:  document.getElementById('panel-config'),
-  };
-  function showPanel(name){
-    Object.entries(panels).forEach(([key, el])=>{
-      if(!el) return;
-      el.classList.toggle('hidden', key !== name);
-    });
-    sideLinks.forEach(a => a.classList.toggle('active', a.dataset.panel === name));
+  const panels = { cursos:document.getElementById('panel-cursos'), pedidos:document.getElementById('panel-pedidos'), config:document.getElementById('panel-config') };
+  function showPanel(name){ Object.entries(panels).forEach(([k,el])=> el.classList.toggle('hidden', k!==name)); sideLinks.forEach(a=>a.classList.toggle('active', a.dataset.panel===name)); }
+  sideLinks.forEach(a=> a.addEventListener('click', (e)=>{ showPanel(a.dataset.panel); }));
+
+  // Hash inicial
+  const hash = (location.hash||'').replace('#','');
+  if (hash==='pedidos') showPanel('pedidos'); else if (hash==='config') showPanel('config'); else showPanel('cursos');
+  if (hash==='finalizados') applyFilter('aprobado'); else if (hash==='en-progreso') applyFilter('en_progreso'); else applyFilter('todos');
+
+  // Vista previa avatar
+  function preview(file){
+    const url = URL.createObjectURL(file);
+    const a = document.getElementById('avatarPreview');
+    const b = document.getElementById('avatarInlinePreview');
+    if(a) a.src = url;
+    if(b) b.src = url;
   }
-
-  sideLinks.forEach(a=>{
-    a.addEventListener('click', (e)=>{
-      // navegación hash ok, pero gestionamos la UI acá:
-      const panel = a.dataset.panel;
-      showPanel(panel);
+  const avatarInput = document.getElementById('avatarInput');
+  if (avatarInput){
+    avatarInput.addEventListener('change', (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if (f) preview(f);
     });
-  });
-
-  // Hash inicial (#pedidos, #config, #mis-cursos)
-  const hash = (location.hash || '').replace('#','');
-  if (hash === 'pedidos') {
-    showPanel('pedidos');
-  } else if (hash === 'config') {
-    showPanel('config');
-  } else {
-    showPanel('cursos');
   }
-
-  // Filtro inicial por hash (opcional)
-  if (hash === 'finalizados') applyFilter('aprobado');
-  else if (hash === 'en-progreso') applyFilter('en_progreso');
-  else applyFilter('todos');
 </script>
 
 {% endblock %}

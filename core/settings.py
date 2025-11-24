@@ -56,7 +56,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # 👇 importante para que tome templates globales como registration/login.html
+        # importante para que tome templates globales como registration/login.html
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,     # carga lms/templates/...
         'OPTIONS': {
@@ -85,10 +85,10 @@ DATABASES = {
 # Password validators
 # -------------------------
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 # -------------------------
@@ -103,8 +103,17 @@ USE_TZ = True
 # Static
 # -------------------------
 STATIC_URL = 'static/'
+# En producción, configurá STATIC_ROOT para collectstatic
+# STATIC_ROOT = BASE_DIR / 'staticfiles'
 # (opcional en dev)
 # STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# -------------------------
+# Media (archivos subidos por usuarios:
+# avatares, comprobantes de transferencia, etc.)
+# -------------------------
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # -------------------------
 # Auth redirects (login/logout)
@@ -112,6 +121,23 @@ STATIC_URL = 'static/'
 LOGIN_URL = 'login'              # /login/ de django.contrib.auth.urls
 LOGIN_REDIRECT_URL = 'lms:home'  # a dónde ir después de loguear
 LOGOUT_REDIRECT_URL = 'lms:home' # a dónde ir después de salir
+
+# -------------------------
+# Email (activación de cuenta)
+# En desarrollo: imprime los mails en consola.
+# En producción: cambiá EMAIL_BACKEND y credenciales SMTP.
+# -------------------------
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Infinito <no-reply@infinito.local>')
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+
+# Ejemplo de configuración SMTP para prod (descomentá y setea variables):
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+# EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+# EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+# EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False') == 'False'
 
 # -------------------------
 # Default PK

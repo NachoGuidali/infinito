@@ -10,11 +10,12 @@ from .models import (
 # -------------------------
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("title", "slug", "is_active")
+    list_display = ("title", "kind", "slug", "is_active")
+    list_filter  = ("kind",)
     search_fields = ("title", "slug")
     prepopulated_fields = {"slug": ("title",)}
     # mostramos y ordenamos los campos importantes en el formulario
-    fields = ("title", "slug", "description", "image_url", "is_active")
+    fields = ("title", "slug", "description", "image_url", "is_active", "kind")
 
 # -------------------------
 # Stages

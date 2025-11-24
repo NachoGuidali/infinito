@@ -2,8 +2,20 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+import hashlib
 
 User = settings.AUTH_USER_MODEL
+
+
+# =========================
+# Helpers
+# =========================
+def gravatar_url(email: str, size: int = 200) -> str:
+    mail = (email or "").strip().lower().encode("utf-8")
+    md5 = hashlib.md5(mail).hexdigest()
+    return f"https://www.gravatar.com/avatar/{md5}?s={size}&d=identicon"
 
 
 class TimeStamped(models.Model):
@@ -13,17 +25,75 @@ class TimeStamped(models.Model):
         abstract = True
 
 
+# =========================
+# Perfil de usuario
+# =========================
+class Profile(TimeStamped):
+    """
+    Datos extendidos del usuario final.
+    """
+    user = models.OneToOneField(User, related_name="profile", on_delete=models.CASCADE)
+
+    # Media
+    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+
+    # Datos
+    dni = models.CharField("DNI", max_length=20, blank=True, default="")
+    telefono = models.CharField("Teléfono", max_length=30, blank=True, default="")
+    birth_date = models.DateField("Fecha de nacimiento", null=True, blank=True)
+    address = models.CharField("Dirección", max_length=255, blank=True, default="")
+    postal_code = models.CharField("Código postal", max_length=12, blank=True, default="")
+
+    def __str__(self):
+        return f"Perfil de {getattr(self.user, 'username', 'user')}"
+
+    @property
+    def avatar_url(self) -> str:
+        """
+        Devuelve URL del avatar subido; si no existe, usa Gravatar del email del usuario.
+        """
+        try:
+            if self.avatar and hasattr(self.avatar, "url"):
+                return self.avatar.url
+        except Exception:
+            pass
+        email = getattr(self.user, "email", "")
+        return gravatar_url(email, size=200)
+
+
+# Crear Profile automáticamente al crear un User
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+
+# =========================
+# Cursos / Etapas / Lecciones
+# =========================
 class Course(models.Model):
+    KIND_CHOICES = (
+        ("course", "Curso"),
+        ("training", "Capacitación"),
+    )
+
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
     price_ars = models.PositiveIntegerField(default=0)
-    image_url = models.URLField(blank=True, null=True)  # ⬅️ NUEVO
+    image_url = models.URLField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
+
+    # NUEVO: tipo de contenido
+    kind = models.CharField(
+        max_length=20,
+        choices=KIND_CHOICES,
+        default="course",
+        help_text="Diferencia si es Curso o Capacitación."
+    )
 
     def __str__(self):
         return self.title
-
 
 
 class Stage(TimeStamped):
@@ -46,7 +116,7 @@ class Stage(TimeStamped):
 class Lesson(TimeStamped):
     stage = models.ForeignKey(Stage, related_name='lessons', on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
-    youtube_url = models.URLField()
+    youtube_url = models.URLField(blank=True)
     # PDF por clase (opcional)
     pdf_url = models.URLField(blank=True)
     order = models.PositiveIntegerField(default=1)
@@ -58,6 +128,9 @@ class Lesson(TimeStamped):
         return self.title
 
 
+# =========================
+# Evaluaciones
+# =========================
 class Quiz(TimeStamped):
     stage = models.OneToOneField(Stage, related_name='quiz', on_delete=models.CASCADE)
     # Tu regla: 80% y sin límite (0 = ilimitado)
@@ -115,6 +188,9 @@ class QuizAttempt(TimeStamped):
         ordering = ['-created_at']
 
 
+# =========================
+# Ventas
+# =========================
 class Bundle(TimeStamped):
     """Curso completo: agrupa todas las etapas de un curso."""
     course = models.ForeignKey(Course, related_name='bundles', on_delete=models.CASCADE)
@@ -133,10 +209,25 @@ class Purchase(TimeStamped):
         ('failed', 'Failed'),
         ('refunded', 'Refunded'),
     )
+    PAYMENT_METHODS = (
+        ('mp', 'Mercado Pago'),
+        ('transfer', 'Transferencia'),
+    )
+
     user = models.ForeignKey(User, related_name='purchases', on_delete=models.CASCADE)
     status = models.CharField(max_length=10, choices=STATUS, default='pending')
     external_ref = models.CharField(max_length=120, blank=True)  # ID MercadoPago/Stripe
     total_ars = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # NUEVOS CAMPOS (para checkout)
+    payment_method = models.CharField(
+        max_length=12, choices=PAYMENT_METHODS, blank=True, default='',
+        help_text="Método elegido por el usuario en el checkout."
+    )
+    transfer_receipt = models.FileField(
+        upload_to='receipts/', null=True, blank=True,
+        help_text="Comprobante de pago en caso de transferencia."
+    )
 
     def __str__(self):
         return f"Purchase #{self.id} ({self.status})"
@@ -155,7 +246,8 @@ class PurchaseItem(TimeStamped):
 
 
 class Entitlement(TimeStamped):
-    """Acceso otorgado a una etapa (por compra individual o por bundle).
+    """
+    Acceso otorgado a una etapa (por compra individual o por bundle).
     OJO: El prerrequisito de aprobar etapa anterior se valida aparte.
     """
     user = models.ForeignKey(User, related_name='entitlements', on_delete=models.CASCADE)
