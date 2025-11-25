@@ -71,6 +71,7 @@ class SignupForm(forms.Form):
         data = self.cleaned_data
         email = data["email"].lower()
 
+        # Crear usuario
         if getattr(User, "USERNAME_FIELD", "username") == "username":
             username = _build_username_from_email(email)
             user = User.objects.create_user(
@@ -92,18 +93,23 @@ class SignupForm(forms.Form):
             user.is_active = False
             user.save(update_fields=["is_active"])
 
-        profile = Profile.objects.create(
-            user=user,
-            dni=data["dni"].strip(),
-            telefono=data["telefono"].strip(),
-            birth_date=data["fecha_nacimiento"],
-            address=data.get("direccion", "").strip(),
-            postal_code=data.get("codigo_postal", "").strip(),
-        )
+        # ⚠️ YA NO CREAMOS EL PROFILE AQUÍ —
+        # La signal lo va a crear automáticamente.
+        
+        # 👉 Actualizar los campos del profile recién creado
+        profile = user.profile   # viene de related_name="profile"
+
+        profile.dni = data["dni"].strip()
+        profile.telefono = data["telefono"].strip()
+        profile.birth_date = data["fecha_nacimiento"]
+        profile.address = data.get("direccion", "").strip()
+        profile.postal_code = data.get("codigo_postal", "").strip()
+
         avatar = data.get("avatar")
         if avatar:
             profile.avatar = avatar
-            profile.save(update_fields=["avatar"])
+
+        profile.save()  # guardamos cambios
 
         return user
 
